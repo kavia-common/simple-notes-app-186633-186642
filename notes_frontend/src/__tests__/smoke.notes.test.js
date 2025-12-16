@@ -3,8 +3,13 @@ import { render, screen, act, fireEvent } from '@testing-library/react';
 import * as client from '../api/client';
 import App from '../App';
 
-// Mock API client
+// Mock API client to avoid real network calls
 jest.mock('../api/client');
+
+// Ensure a consistent API base for tests that matches the application's resolution order.
+// We prefer REACT_APP_API_BASE, then REACT_APP_BACKEND_URL, else window.location.origin.
+// For tests, set REACT_APP_API_BASE explicitly.
+process.env.REACT_APP_API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:4000';
 
 function mockNotes(list = []) {
   client.listNotes.mockResolvedValueOnce(list);

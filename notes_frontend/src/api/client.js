@@ -3,26 +3,35 @@
 /**
  * Resolve the base URL for the backend API.
  * Prefers REACT_APP_API_BASE, then REACT_APP_BACKEND_URL, else window.location.origin.
+ * Trailing slashes are stripped to ensure predictable URL joining.
  */
-function getBaseUrl() {
+// PUBLIC_INTERFACE
+export function getBaseUrl() {
   const fromEnv =
     process.env.REACT_APP_API_BASE ||
     process.env.REACT_APP_BACKEND_URL ||
     "";
-  const base = fromEnv || (typeof window !== "undefined" ? window.location.origin : "");
-  return base.replace(/\/+$/, "");
+
+  // Fallback to browser origin if no env is provided
+  const base =
+    (fromEnv && String(fromEnv)) ||
+    (typeof window !== "undefined" ? window.location.origin : "");
+
+  return String(base).replace(/\/+$/, "");
 }
 
 const BASE = getBaseUrl();
 
 /**
  * Internal helper to perform JSON fetch calls with sensible defaults.
+ * Always prefixes requests with the resolved BASE.
  * @param {string} path
  * @param {RequestInit} init
  * @returns {Promise<any>}
  */
 async function api(path, init = {}) {
-  const url = `${BASE}${path}`;
+  const normalizedPath = String(path || "");
+  const url = `${BASE}${normalizedPath.startsWith("/") ? "" : "/"}${normalizedPath}`;
   const headers = {
     "Content-Type": "application/json",
     ...(init.headers || {}),
