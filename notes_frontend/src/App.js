@@ -1,47 +1,82 @@
-import React, { useState, useEffect } from 'react';
-import logo from './logo.svg';
+import React, { useEffect, useState } from 'react';
 import './App.css';
+import './index.css';
+import Header from './components/Header';
+import NotesSidebar from './components/NotesSidebar';
+import NoteEditor from './components/NoteEditor';
+import { useNotes } from './hooks/useNotes';
 
+/**
+ * Root application component that renders the two-column notes layout.
+ * Integrates header actions with the notes state managed by useNotes.
+ */
 // PUBLIC_INTERFACE
 function App() {
+  const {
+    notes,
+    selectedNoteId,
+    selectedNote,
+    loading,
+    error,
+    creating,
+    updating,
+    deleting,
+    selectNote,
+    createNote,
+    updateNote,
+    deleteNote,
+    reload,
+  } = useNotes();
+
   const [theme, setTheme] = useState('light');
 
-  // Effect to apply theme to document element
+  // Apply theme to document
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
   // PUBLIC_INTERFACE
   const toggleTheme = () => {
-    setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
+    setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
   };
 
+  const isBusy = loading || creating || updating || deleting;
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <button 
-          className="theme-toggle" 
-          onClick={toggleTheme}
-          aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-        >
-          {theme === 'light' ? '🌙 Dark' : '☀️ Light'}
-        </button>
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <p>
-          Current theme: <strong>{theme}</strong>
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className="app-root">
+      <Header
+        onNew={() => createNote()}
+        onDelete={() => selectedNoteId && deleteNote(selectedNoteId)}
+        canDelete={!!selectedNoteId && !isBusy}
+        isBusy={isBusy}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+      />
+
+      <div className="layout">
+        <aside className="sidebar" aria-label="Notes list">
+          <NotesSidebar
+            notes={notes}
+            selectedNoteId={selectedNoteId}
+            onSelect={selectNote}
+            loading={loading}
+            error={error}
+            onReload={reload}
+          />
+        </aside>
+
+        <main className="editor" aria-label="Note editor">
+          <NoteEditor
+            note={selectedNote}
+            onChange={(partial) =>
+              selectedNoteId && updateNote(selectedNoteId, partial)
+            }
+            isSaving={updating}
+            loading={loading && !selectedNote}
+            error={error}
+          />
+        </main>
+      </div>
     </div>
   );
 }
